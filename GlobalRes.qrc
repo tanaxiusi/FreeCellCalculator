@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Image/background.jpg</file>
+        <file>Image/border.png</file>
+        <file>Image/border_below_fadeout.png</file>
+        <file>Image/calc.png</file>
+        <file>Image/card.png</file>
+        <file>Image/gear.png</file>
+        <file>Image/left.png</file>
+        <file>Image/new.png</file>
+        <file>Image/play.png</file>
+        <file>Image/right.png</file>
+        <file>Translation/en.qm</file>
+    </qresource>
+</RCC>
