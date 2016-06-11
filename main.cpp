@@ -1,4 +1,4 @@
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QTranslator>
 #include <QTextCodec>
 #include <QSettings>
@@ -8,7 +8,6 @@ int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
 	app.addLibraryPath(QApplication::applicationDirPath() + "/plugins");
-	QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
 
 	QString languageConfig;
 	{

@@ -14,8 +14,8 @@
 #include "ConfigDlg.h"
 #include "ProgressDlg.h"
 
-MainDlg::MainDlg(QWidget *parent, Qt::WFlags flags)
-	: QMainWindow(parent, flags)
+MainDlg::MainDlg(QWidget *parent)
+	: QMainWindow(parent)
 {
 	m_solutionIndex = 0;
 	m_playing = false;

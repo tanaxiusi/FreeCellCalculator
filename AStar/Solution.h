@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include "AreaBase.h"
+#include <QHash>
 
 namespace AStar
 {
@@ -34,7 +35,7 @@ namespace AStar
 
 
 		// mapAllNode：存储所有节点信息
-		typename std::map<BlockType, Node<BlockType> > mapAllNode;
+		typename QHash<BlockType, Node<BlockType> > mapAllNode;
 
 		// mapOpen：open节点列表，first为F值，使用multimap以快速找到最小值
 		std::multimap<double, BlockType> mapOpen;

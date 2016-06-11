@@ -12,6 +12,7 @@ SolutionThread::SolutionThread(QObject *parent)
 	m_requireAbort = false;
 	connect(&m_thread, SIGNAL(started()), this, SLOT(onStart()));
 	this->moveToThread(&m_thread);
+	m_lastRefreshTime.start();
 }
 
 SolutionThread::~SolutionThread()

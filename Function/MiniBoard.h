@@ -14,3 +14,5 @@ public:
 	bool operator == (const MiniBoard & other) const;
 	bool operator != (const MiniBoard & other) const;
 };
+
+uint qHash(const MiniBoard & key);

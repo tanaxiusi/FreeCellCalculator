@@ -1,5 +1,7 @@
 ﻿#include "MiniBoard.h"
 #include <memory.h>
+#include <QByteArray>
+#include <QHash>
 
 MiniBoard::MiniBoard()
 {
@@ -65,4 +67,9 @@ bool MiniBoard::operator==( const MiniBoard & other ) const
 bool MiniBoard::operator!=( const MiniBoard & other ) const
 {
 	return memcmp(this, &other, sizeof(MiniBoard)) != 0;
+}
+
+uint qHash(const MiniBoard & key)
+{
+	return qHashBits(&key, sizeof(key));
 }

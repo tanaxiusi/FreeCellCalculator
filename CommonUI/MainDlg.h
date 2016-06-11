@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <QtGui/QMainWindow>
+#include <QMainWindow>
 #include "ui_MainDlg.h"
 #include "Function/Board.h"
 #include "Function/GamePainter.h"
@@ -10,7 +10,7 @@ class MainDlg : public QMainWindow
 	Q_OBJECT
 
 public:
-	MainDlg(QWidget *parent = 0, Qt::WFlags flags = 0);
+	MainDlg(QWidget *parent = 0);
 	~MainDlg();
 
 public slots:
