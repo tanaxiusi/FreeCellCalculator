@@ -19,8 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AStar\AHash.cpp" />
     <ClCompile Include="AStar\AreaBase.cpp" />
     <ClCompile Include="AStar\Solution.cpp" />
+    <ClCompile Include="AStar\SubThread.cpp" />
+    <ClCompile Include="AStar\WinReadWriteLock.cpp" />
+    <ClCompile Include="AStar\WinReadWriteLockPool.cpp" />
     <ClCompile Include="CommonUI\ConfigDlg.cpp" />
     <ClCompile Include="CommonUI\MainDlg.cpp" />
     <ClCompile Include="CommonUI\PaintWidgetNormal.cpp" />
@@ -112,8 +116,12 @@
     <ClCompile Include="Util\Other.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AStar\AHash.h" />
     <ClInclude Include="AStar\AreaBase.h" />
     <ClInclude Include="AStar\Solution.h" />
+    <ClInclude Include="AStar\SubThread.h" />
+    <ClInclude Include="AStar\WinReadWriteLock.h" />
+    <ClInclude Include="AStar\WinReadWriteLockPool.h" />
     <ClInclude Include="Function\Board.h" />
     <ClInclude Include="Function\BoardArea.h" />
     <ClInclude Include="Function\Card.h" />
@@ -530,7 +538,7 @@
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
       <AdditionalLibraryDirectories>$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
