@@ -1,6 +1,4 @@
 #pragma once
-#include <vector>
-#include <map>
 #include "AreaBase.h"
 #include <QThreadPool>
 #include "SubThread.h"
@@ -26,16 +24,15 @@ namespace AStar
 		QThreadPool threadPool;
 		threadPool.setMaxThreadCount(sharedData.threadCount);
 
-		QList<SubThread<Block>* > m_lstThread;
-
 		for (int i = 0; i < sharedData.threadCount; ++i)
+			threadPool.start(new SubThread<Block>(&sharedData, i));
+
+		while (!threadPool.waitForDone(50))
 		{
-			SubThread<Block> * thr = new SubThread<Block>(&sharedData, i);
-			m_lstThread << thr;
-			threadPool.start(thr);
-		}
-		while(!threadPool.waitForDone(100))
 			pReceiver->onProgressChange(false, 0, sharedData.mapAll.size());
+			if (pReceiver && pReceiver->isAbort())
+				sharedData.finished = true;
+		}
 
 		if(sharedData.pathFound && !(pReceiver && pReceiver->isAbort()))
 		{
@@ -50,5 +47,8 @@ namespace AStar
 				ptPrev = sharedData.mapAll[pt].parent;
 			}
 		}
+
+		if(pReceiver)
+			pReceiver->onProgressChange(true, sharedData.mapOpen.size(), sharedData.mapAll.size());
 	}
 }

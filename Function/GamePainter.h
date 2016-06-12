@@ -60,7 +60,7 @@ private:
 	Board m_data2;
 	bool m_inAnimation;
 	QTimer m_timer;
-	QTime m_time;
+	quint64 m_time;
 	int m_progress;
 	int m_aboveRightIndex[4];
 	bool m_dynamicScaleEnable;

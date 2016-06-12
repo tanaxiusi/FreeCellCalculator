@@ -1,6 +1,7 @@
 ﻿#include "GamePainter.h"
 #include "Util/Other.h"
 #include <cmath>
+#include "CPUTimer.h"
 
 #define CARD_WIDTH 150
 #define CARD_HEIGHT 200
@@ -53,7 +54,7 @@ GamePainter::GamePainter(QObject *parent)
 	m_imgBorder2.load(":/Image/border_below_fadeout.png");
 
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(onTimer()));
-	m_timer.setInterval(8);
+	m_timer.setInterval(10);
 }
 
 GamePainter::~GamePainter()
@@ -76,7 +77,7 @@ void GamePainter::setDisplayData( const Board & board1, const Board & board2 )
 	m_inAnimation = true;
 	m_progress = 0;
 	m_timer.start();
-	m_time.start();
+	m_time = CPUTimer::GetTickCount();
 	this->requireRepaint();
 }
 
@@ -109,7 +110,7 @@ void GamePainter::setSmoothEnable( bool enable )
 void GamePainter::onTimer()
 {
 	int lastProgress = m_progress;
-	m_progress = m_time.elapsed() % (m_maxProgress + 1);
+	m_progress = (CPUTimer::GetTickCount() - m_time) % (m_maxProgress + 1);
 
 	if(m_progress < lastProgress)
 		emit playFinish();
@@ -139,7 +140,6 @@ void GamePainter::onPaintEvent( QPainter * pPainter, int width, int height )
 	drawCardBorder(&painter);
 	drawStaticCard(&painter);
 	drawMovingCard(&painter, graphicProgress);
-	
 }
 
 void GamePainter::applyTransform(QPainter * painter, QSize canvasSize, double graphicProgress)

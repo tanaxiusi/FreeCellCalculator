@@ -33,6 +33,7 @@
     <ClCompile Include="Function\Board.cpp" />
     <ClCompile Include="Function\BoardArea.cpp" />
     <ClCompile Include="Function\Card.cpp" />
+    <ClCompile Include="Function\CPUTimer.cpp" />
     <ClCompile Include="Function\GamePainter.cpp" />
     <ClCompile Include="Function\MiniBoard.cpp" />
     <ClCompile Include="Function\Shuffle.cpp" />
@@ -125,6 +126,7 @@
     <ClInclude Include="Function\Board.h" />
     <ClInclude Include="Function\BoardArea.h" />
     <ClInclude Include="Function\Card.h" />
+    <ClInclude Include="Function\CPUTimer.h" />
     <ClInclude Include="Function\MiniBoard.h" />
     <ClInclude Include="Function\Shuffle.h" />
     <ClInclude Include="GeneratedFiles\ui_ConfigDlg.h" />
