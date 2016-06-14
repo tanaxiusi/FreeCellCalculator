@@ -17,7 +17,7 @@ namespace AStar
 	{
 		ThreadSharedData<Block> sharedData(pArea, begin, end, qMin(4, QThread::idealThreadCount()));
 
-		auto & nodeBegin = sharedData.mapAll[begin];
+		Node<Block> & nodeBegin = sharedData.mapAll[begin];
 		nodeBegin.parent = begin;
 		sharedData.mapOpen_reversed[begin] = sharedData.mapOpen.insert(std::make_pair(nodeBegin.F(), begin));
 		

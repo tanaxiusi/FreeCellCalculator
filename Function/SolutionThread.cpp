@@ -65,7 +65,7 @@ void SolutionThread::onStart()
 	QList<MiniBoard> lstResult = AStar::getSolution(&ba, MiniBoard(m_game), MiniBoard(Board::GetFinishStatus()), this);
 
 	QList<Board> lstConvertedResult;
-	for (const MiniBoard & miniBoard : lstResult)
+	foreach (MiniBoard miniBoard, lstResult)
 		lstConvertedResult << miniBoard;
 
 	if(!m_requireAbort)

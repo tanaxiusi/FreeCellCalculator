@@ -223,7 +223,7 @@ namespace AStar
 					while (!d.lockForOpen.tryLock());
 					if (!isNew)
 					{
-						auto iterOpenReversed = d.mapOpen_reversed.find(around);
+						QHash<Block, ThreadSharedData<Block>::MultiMapIterator>::iterator iterOpenReversed = d.mapOpen_reversed.find(around);
 						if (iterOpenReversed != d.mapOpen_reversed.end())
 						{
 							d.mapOpen.erase(iterOpenReversed.value());
@@ -236,7 +236,7 @@ namespace AStar
 					}
 					else
 					{
-						auto iterOpen = d.mapOpen.insert(std::make_pair(nodeAround->F(), around));
+						std::multimap<double, Block>::iterator iterOpen = d.mapOpen.insert(std::make_pair(nodeAround->F(), around));
 						Q_ASSERT(d.mapOpen_reversed.find(around) == d.mapOpen_reversed.end());
 						d.mapOpen_reversed[around] = iterOpen;
 					}
