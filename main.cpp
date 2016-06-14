@@ -5,8 +5,6 @@
 #include <QtPlugin>
 #include "CommonUI/MainDlg.h"
 
-Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
-
 
 int main(int argc, char *argv[])
 {
