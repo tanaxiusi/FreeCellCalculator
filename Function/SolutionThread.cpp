@@ -62,14 +62,13 @@ bool SolutionThread::isAbort()
 void SolutionThread::onStart()
 {
 	BoardArea ba;
-	std::vector<MiniBoard> vecPath;
-	AStar::GetPath(&ba, MiniBoard(m_game), MiniBoard(Board::GetFinishStatus()), vecPath, this);
+	QList<MiniBoard> lstResult = AStar::getSolution(&ba, MiniBoard(m_game), MiniBoard(Board::GetFinishStatus()), this);
 
-	QList<Board> lstResult;
-	for(int i = 0; i < (int)vecPath.size(); i++)
-		lstResult << vecPath[i];
+	QList<Board> lstConvertedResult;
+	for (const MiniBoard & miniBoard : lstResult)
+		lstConvertedResult << miniBoard;
 
 	if(!m_requireAbort)
-		emit finish(lstResult);
+		emit finish(lstConvertedResult);
 	m_thread.quit();
 }

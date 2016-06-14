@@ -5,7 +5,7 @@
 #include <QMutex>
 #include "WinReadWriteLockPool.h"
 #include "AreaBase.h"
-#include "AHash.h"
+#include "AtomicHash.h"
 
 namespace AStar
 {
@@ -34,7 +34,7 @@ namespace AStar
 		bool finished = false;
 		QAtomicInt waitingThreadCount = 0;
 
-		AHash<Block, Node<Block> > mapAll;
+		AtomicHash<Block, Node<Block> > mapAll;
 		std::multimap<double, Block> mapOpen;
 		typedef typename std::multimap<double, Block>::iterator MultiMapIterator;
 		QHash<Block, MultiMapIterator> mapOpen_reversed;
@@ -57,10 +57,10 @@ namespace AStar
 	};
 
 	template<class Block>
-	class SubThread : public QRunnable
+	class ChildThread : public QRunnable
 	{
 	public:
-		SubThread(ThreadSharedData<Block> * sharedData, int index)
+		ChildThread(ThreadSharedData<Block> * sharedData, int index)
 		{
 			this->sharedData = sharedData;
 			this->index = index;
@@ -84,7 +84,7 @@ namespace AStar
 	};
 
 	template<class Block>
-	inline bool AStar::SubThread<Block>::getNextCurrent(Block * outCurrent)
+	inline bool AStar::ChildThread<Block>::getNextCurrent(Block * outCurrent)
 	{
 		Block & current = *outCurrent;
 
@@ -129,14 +129,14 @@ namespace AStar
 
 
 	template<class Block>
-	void AStar::SubThread<Block>::closeNodeGetG(const Block & block, double * outG)
+	void AStar::ChildThread<Block>::closeNodeGetG(const Block & block, double * outG)
 	{
 		ThreadSharedData<Block> & d = *sharedData;
 
 		WinReadWriteLock * lockSingleCurrent = d.lockForSingle(block);
 		while (!lockSingleCurrent->tryLockForWrite());
 
-		AHash<Block, Node<Block> >::iterator iterCurrent = d.mapAll.atomicFind(block);
+		AtomicHash<Block, Node<Block> >::iterator iterCurrent = d.mapAll.atomicFind(block);
 		Q_ASSERT(iterCurrent != d.mapAll.end());
 		Node<Block> * nodeCurrent = &iterCurrent.value();
 		nodeCurrent->isClose = true;
@@ -147,7 +147,7 @@ namespace AStar
 
 
 	template<class Block>
-	void AStar::SubThread<Block>::scanArround(const Block & block, double blockG)
+	void AStar::ChildThread<Block>::scanArround(const Block & block, double blockG)
 	{
 		ThreadSharedData<Block> & d = *sharedData;
 
@@ -171,7 +171,7 @@ namespace AStar
 
 			bool ignore = false;
 
-			AHash<Block, Node<Block> >::iterator iterAround = d.mapAll.atomicFind(around);
+			AtomicHash<Block, Node<Block> >::iterator iterAround = d.mapAll.atomicFind(around);
 			bool exist = iterAround != d.mapAll.end();
 
 			if (exist)
@@ -248,7 +248,7 @@ namespace AStar
 
 
 	template<class Block>
-	void AStar::SubThread<Block>::run()
+	void AStar::ChildThread<Block>::run()
 	{
 		ThreadSharedData<Block> & d = *sharedData;
 

@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
 
-#include "AHash.h"
+#include "AtomicHash.h"
 
 #ifdef truncate
 #undef truncate
@@ -174,23 +174,23 @@ static int countBits(int hint)
 }
 
 /*
-    A AHash has initially around pow(2, MinNumBits) buckets. For
+    A AtomicHash has initially around pow(2, MinNumBits) buckets. For
     example, if MinNumBits is 4, it has 17 buckets.
 */
 const int MinNumBits = 4;
 
-const AHashData AHashData::shared_null = {
+const AtomicHashData AtomicHashData::shared_null = {
     0, 0, 0, 0, Q_REFCOUNT_INITIALIZE_STATIC, 0, 0, MinNumBits, 0, 0, 0, true, false, 0
 };
 
-void *AHashData::allocateNode(int nodeAlign)
+void *AtomicHashData::allocateNode(int nodeAlign)
 {
     void *ptr = strictAlignment ? qMallocAligned(nodeSize, nodeAlign) : malloc(nodeSize);
     Q_CHECK_PTR(ptr);
     return ptr;
 }
 
-void AHashData::freeNode(void *node)
+void AtomicHashData::freeNode(void *node)
 {
     if (strictAlignment)
         qFreeAligned(node);
@@ -198,18 +198,18 @@ void AHashData::freeNode(void *node)
         free(node);
 }
 
-AHashData *AHashData::detach_helper(void (*node_duplicate)(Node *, void *),
+AtomicHashData *AtomicHashData::detach_helper(void (*node_duplicate)(Node *, void *),
                                     void (*node_delete)(Node *),
                                     int nodeSize,
                                     int nodeAlign)
 {
     union {
-        AHashData *d;
+        AtomicHashData *d;
         Node *e;
     };
     if (this == &shared_null)
         qt_initialize_qhash_seed(); // may throw
-    d = new AHashData;
+    d = new AtomicHashData;
     d->fakeNext = 0;
     d->buckets = 0;
 	d->bucketsLock = 0;
@@ -270,7 +270,7 @@ AHashData *AHashData::detach_helper(void (*node_duplicate)(Node *, void *),
     return d;
 }
 
-void AHashData::free_helper(void (*node_delete)(Node *))
+void AtomicHashData::free_helper(void (*node_delete)(Node *))
 {
     if (node_delete) {
         Node *this_e = reinterpret_cast<Node *>(this);
@@ -293,15 +293,15 @@ void AHashData::free_helper(void (*node_delete)(Node *))
     delete this;
 }
 
-AHashData::Node *AHashData::nextNode(Node *node)
+AtomicHashData::Node *AtomicHashData::nextNode(Node *node)
 {
     union {
         Node *next;
         Node *e;
-        AHashData *d;
+        AtomicHashData *d;
     };
     next = node->next;
-    Q_ASSERT_X(next, "AHash", "Iterating beyond end()");
+    Q_ASSERT_X(next, "AtomicHash", "Iterating beyond end()");
     if (next->next)
         return next;
 
@@ -316,11 +316,11 @@ AHashData::Node *AHashData::nextNode(Node *node)
     return e;
 }
 
-AHashData::Node *AHashData::previousNode(Node *node)
+AtomicHashData::Node *AtomicHashData::previousNode(Node *node)
 {
     union {
         Node *e;
-        AHashData *d;
+        AtomicHashData *d;
     };
 
     e = node;
@@ -347,7 +347,7 @@ AHashData::Node *AHashData::previousNode(Node *node)
         --bucket;
         --start;
     }
-    Q_ASSERT_X(start >= 0, "AHash", "Iterating backward beyond begin()");
+    Q_ASSERT_X(start >= 0, "AtomicHash", "Iterating backward beyond begin()");
     return e;
 }
 
@@ -357,7 +357,7 @@ AHashData::Node *AHashData::previousNode(Node *node)
     nonnegative, (1 << hint) gives the approximate number
     of buckets that should be used.
 */
-void AHashData::rehash(int hint)
+void AtomicHashData::rehash(int hint)
 {
     if (hint < 0) {
         hint = countBits(-hint);

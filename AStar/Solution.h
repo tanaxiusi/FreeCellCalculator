@@ -1,7 +1,7 @@
 #pragma once
 #include "AreaBase.h"
 #include <QThreadPool>
-#include "SubThread.h"
+#include "ChildThread.h"
 
 namespace AStar
 {
@@ -13,7 +13,7 @@ namespace AStar
 	};
 
 	template<class Block>
-	void GetPath(const AreaBase<Block> * pArea, const Block & begin, const Block & end, std::vector<Block> & outPath, ProgressReceiver * pReceiver = 0)
+	QList<Block> getSolution(const AreaBase<Block> * pArea, const Block & begin, const Block & end, ProgressReceiver * pReceiver = NULL)
 	{
 		ThreadSharedData<Block> sharedData(pArea, begin, end, qMin(4, QThread::idealThreadCount()));
 
@@ -25,7 +25,7 @@ namespace AStar
 		threadPool.setMaxThreadCount(sharedData.threadCount);
 
 		for (int i = 0; i < sharedData.threadCount; ++i)
-			threadPool.start(new SubThread<Block>(&sharedData, i));
+			threadPool.start(new ChildThread<Block>(&sharedData, i));
 
 		while (!threadPool.waitForDone(50))
 		{
@@ -34,15 +34,17 @@ namespace AStar
 				sharedData.finished = true;
 		}
 
+		QList<Block> lstResult;
+
 		if(sharedData.pathFound && !(pReceiver && pReceiver->isAbort()))
 		{
-			outPath.insert(outPath.begin(), 1, end);
+			lstResult.insert(0, end);
 
 			Block pt = end;
 			Block ptPrev = sharedData.mapAll[pt].parent;
 			while(ptPrev != pt)
 			{
-				outPath.insert(outPath.begin(), 1, ptPrev);
+				lstResult.insert(0, ptPrev);
 				pt = ptPrev;
 				ptPrev = sharedData.mapAll[pt].parent;
 			}
@@ -50,5 +52,7 @@ namespace AStar
 
 		if(pReceiver)
 			pReceiver->onProgressChange(true, sharedData.mapOpen.size(), sharedData.mapAll.size());
+
+		return lstResult;
 	}
 }

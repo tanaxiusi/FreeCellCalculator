@@ -13,6 +13,7 @@
 #include "PaintWidgetOpenGL.h"
 #include "ConfigDlg.h"
 #include "ProgressDlg.h"
+#include <QtDebug>
 
 MainDlg::MainDlg(QWidget *parent)
 	: QMainWindow(parent)

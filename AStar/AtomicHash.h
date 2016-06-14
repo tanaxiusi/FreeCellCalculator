@@ -17,7 +17,7 @@
 #pragma warning( disable : 4127 ) // conditional expression is constant
 #endif
 
-struct AHashData
+struct AtomicHashData
 {
     struct Node {
         Node *next;
@@ -41,7 +41,7 @@ struct AHashData
 
     void *allocateNode(int nodeAlign);
     void freeNode(void *node);
-    AHashData *detach_helper(void (*node_duplicate)(Node *, void *), void (*node_delete)(Node *),
+    AtomicHashData *detach_helper(void (*node_duplicate)(Node *, void *), void (*node_delete)(Node *),
                              int nodeSize, int nodeAlign);
     bool willGrow();
 	void grow();
@@ -57,10 +57,10 @@ struct AHashData
     static Node *nextNode(Node *node);
     static Node *previousNode(Node *node);
 
-    static const AHashData shared_null;
+    static const AtomicHashData shared_null;
 };
 
-inline bool AHashData::willGrow()
+inline bool AtomicHashData::willGrow()
 {
     if (size >= numBuckets) {
         rehash(numBits + 1);
@@ -70,12 +70,12 @@ inline bool AHashData::willGrow()
     }
 }
 
-inline void AHashData::grow()
+inline void AtomicHashData::grow()
 {
 	rehash(numBits + 1);
 }
 
-inline void AHashData::hasShrunk()
+inline void AtomicHashData::hasShrunk()
 {
     if (size <= (numBuckets >> 3) && numBits > userNumBits) {
         QT_TRY {
@@ -86,7 +86,7 @@ inline void AHashData::hasShrunk()
     }
 }
 
-inline void AHashData::shrunk()
+inline void AtomicHashData::shrunk()
 {
 	QT_TRY{
 		rehash(qMax(int(numBits) - 2, int(userNumBits)));
@@ -95,7 +95,7 @@ inline void AHashData::shrunk()
 	}
 }
 
-inline AHashData::Node *AHashData::firstNode()
+inline AtomicHashData::Node *AtomicHashData::firstNode()
 {
     Node *e = reinterpret_cast<Node *>(this);
     Node **bucket = buckets;
@@ -108,94 +108,94 @@ inline AHashData::Node *AHashData::firstNode()
     return e;
 }
 
-struct AHashDummyValue
+struct AtomicHashDummyValue
 {
 };
 
-inline bool operator==(const AHashDummyValue & /* v1 */, const AHashDummyValue & /* v2 */)
+inline bool operator==(const AtomicHashDummyValue & /* v1 */, const AtomicHashDummyValue & /* v2 */)
 {
     return true;
 }
 
-Q_DECLARE_TYPEINFO(AHashDummyValue, Q_MOVABLE_TYPE | Q_DUMMY_TYPE);
+Q_DECLARE_TYPEINFO(AtomicHashDummyValue, Q_MOVABLE_TYPE | Q_DUMMY_TYPE);
 
 template <class Key, class T>
-struct AHashNode
+struct AtomicHashNode
 {
-	AHashNode *next;
+	AtomicHashNode *next;
     const uint h;
     const Key key;
     T value;
 
-    inline AHashNode(const Key &key0, const T &value0, uint hash, AHashNode *n)
+    inline AtomicHashNode(const Key &key0, const T &value0, uint hash, AtomicHashNode *n)
         : next(n), h(hash), key(key0), value(value0) {}
     inline bool same_key(uint h0, const Key &key0) const { return h0 == h && key0 == key; }
 
 private:
-    Q_DISABLE_COPY(AHashNode)
+    Q_DISABLE_COPY(AtomicHashNode)
 };
 
-// Specialize for AHashDummyValue in order to save some memory
+// Specialize for AtomicHashDummyValue in order to save some memory
 template <class Key>
-struct AHashNode<Key, AHashDummyValue>
+struct AtomicHashNode<Key, AtomicHashDummyValue>
 {
     union {
-		AHashNode *next;
-		AHashDummyValue value;
+		AtomicHashNode *next;
+		AtomicHashDummyValue value;
     };
     const uint h;
     const Key key;
 
-    inline AHashNode(const Key &key0, const AHashDummyValue &, uint hash, AHashNode *n)
+    inline AtomicHashNode(const Key &key0, const AtomicHashDummyValue &, uint hash, AtomicHashNode *n)
         : next(n), h(hash), key(key0) {}
     inline bool same_key(uint h0, const Key &key0) const { return h0 == h && key0 == key; }
 
 private:
-    Q_DISABLE_COPY(AHashNode)
+    Q_DISABLE_COPY(AtomicHashNode)
 };
 
 template <class Key, class T>
-class AHash
+class AtomicHash
 {
-    typedef AHashNode<Key, T> Node;
+    typedef AtomicHashNode<Key, T> Node;
 
     union {
-		AHashData *d;
-		AHashNode<Key, T> *e;
+		AtomicHashData *d;
+		AtomicHashNode<Key, T> *e;
     };
 
-    static inline Node *concrete(AHashData::Node *node) {
+    static inline Node *concrete(AtomicHashData::Node *node) {
         return reinterpret_cast<Node *>(node);
     }
 
     static inline int alignOfNode() { return qMax<int>(sizeof(void*), Q_ALIGNOF(Node)); }
 
 public:
-    inline AHash() Q_DECL_NOTHROW : d(const_cast<AHashData *>(&AHashData::shared_null)) { }
+    inline AtomicHash() Q_DECL_NOTHROW : d(const_cast<AtomicHashData *>(&AtomicHashData::shared_null)) { }
 #ifdef Q_COMPILER_INITIALIZER_LISTS
-    inline AHash(std::initializer_list<std::pair<Key,T> > list)
-        : d(const_cast<AHashData *>(&AHashData::shared_null))
+    inline AtomicHash(std::initializer_list<std::pair<Key,T> > list)
+        : d(const_cast<AtomicHashData *>(&AtomicHashData::shared_null))
     {
         reserve(int(list.size()));
         for (typename std::initializer_list<std::pair<Key,T> >::const_iterator it = list.begin(); it != list.end(); ++it)
             insert(it->first, it->second);
     }
 #endif
-	AHash(const AHash &other) : d(other.d) { d->ref.ref(); if (!d->sharable) detach(); }
-    ~AHash() { if (!d->ref.deref()) freeData(d); }
+	AtomicHash(const AtomicHash &other) : d(other.d) { d->ref.ref(); if (!d->sharable) detach(); }
+    ~AtomicHash() { if (!d->ref.deref()) freeData(d); }
 
-	AHash &operator=(const AHash &other);
+	AtomicHash &operator=(const AtomicHash &other);
 #ifdef Q_COMPILER_RVALUE_REFS
-	AHash(AHash &&other) Q_DECL_NOTHROW : d(other.d) { other.d = const_cast<AHashData *>(&AHashData::shared_null); }
-	AHash &operator=(AHash &&other) Q_DECL_NOTHROW
+	AtomicHash(AtomicHash &&other) Q_DECL_NOTHROW : d(other.d) { other.d = const_cast<AtomicHashData *>(&AtomicHashData::shared_null); }
+	AtomicHash &operator=(AtomicHash &&other) Q_DECL_NOTHROW
 	{
-		AHash moved(std::move(other)); swap(moved); return *this;
+		AtomicHash moved(std::move(other)); swap(moved); return *this;
 }
 #endif
-    void swap(AHash &other) Q_DECL_NOTHROW { qSwap(d, other.d); }
+    void swap(AtomicHash &other) Q_DECL_NOTHROW { qSwap(d, other.d); }
 
-    bool operator==(const AHash &other) const;
-    bool operator!=(const AHash &other) const { return !(*this == other); }
+    bool operator==(const AtomicHash &other) const;
+    bool operator!=(const AtomicHash &other) const { return !(*this == other); }
 
     inline int size() const { return d->size; }
 
@@ -208,9 +208,9 @@ public:
     inline void detach() { if (d->ref.isShared()) detach_helper(); }
     inline bool isDetached() const { return !d->ref.isShared(); }
 #if !defined(QT_NO_UNSHARABLE_CONTAINERS)
-    inline void setSharable(bool sharable) { if (!sharable) detach(); if (d != &AHashData::shared_null) d->sharable = sharable; }
+    inline void setSharable(bool sharable) { if (!sharable) detach(); if (d != &AtomicHashData::shared_null) d->sharable = sharable; }
 #endif
-    bool isSharedWith(const AHash &other) const { return d == other.d; }
+    bool isSharedWith(const AtomicHash &other) const { return d == other.d; }
 
     void clear();
 
@@ -237,8 +237,8 @@ public:
     class iterator
     {
         friend class const_iterator;
-        friend class AHash<Key, T>;
-		AHashData::Node *i;
+        friend class AtomicHash<Key, T>;
+		AtomicHashData::Node *i;
 
     public:
         typedef std::bidirectional_iterator_tag iterator_category;
@@ -248,7 +248,7 @@ public:
         typedef T &reference;
 
         inline iterator() : i(Q_NULLPTR) { }
-        explicit inline iterator(void *node) : i(reinterpret_cast<AHashData::Node *>(node)) { }
+        explicit inline iterator(void *node) : i(reinterpret_cast<AtomicHashData::Node *>(node)) { }
 
         inline const Key &key() const { return concrete(i)->key; }
         inline T &value() const { return concrete(i)->value; }
@@ -258,21 +258,21 @@ public:
         inline bool operator!=(const iterator &o) const { return i != o.i; }
 
         inline iterator &operator++() {
-            i = AHashData::nextNode(i);
+            i = AtomicHashData::nextNode(i);
             return *this;
         }
         inline iterator operator++(int) {
             iterator r = *this;
-            i = AHashData::nextNode(i);
+            i = AtomicHashData::nextNode(i);
             return r;
         }
         inline iterator &operator--() {
-            i = AHashData::previousNode(i);
+            i = AtomicHashData::previousNode(i);
             return *this;
         }
         inline iterator operator--(int) {
             iterator r = *this;
-            i = AHashData::previousNode(i);
+            i = AtomicHashData::previousNode(i);
             return r;
         }
         inline iterator operator+(int j) const
@@ -295,7 +295,7 @@ public:
     {
         friend class iterator;
         friend class QSet<Key>;
-		AHashData::Node *i;
+		AtomicHashData::Node *i;
 
     public:
         typedef std::bidirectional_iterator_tag iterator_category;
@@ -306,7 +306,7 @@ public:
 
         inline const_iterator() : i(Q_NULLPTR) { }
         explicit inline const_iterator(void *node)
-            : i(reinterpret_cast<AHashData::Node *>(node)) { }
+            : i(reinterpret_cast<AtomicHashData::Node *>(node)) { }
 #ifdef QT_STRICT_ITERATORS
         explicit inline const_iterator(const iterator &o)
 #else
@@ -322,21 +322,21 @@ public:
         inline bool operator!=(const const_iterator &o) const { return i != o.i; }
 
         inline const_iterator &operator++() {
-            i = AHashData::nextNode(i);
+            i = AtomicHashData::nextNode(i);
             return *this;
         }
         inline const_iterator operator++(int) {
             const_iterator r = *this;
-            i = AHashData::nextNode(i);
+            i = AtomicHashData::nextNode(i);
             return r;
         }
         inline const_iterator &operator--() {
-            i = AHashData::previousNode(i);
+            i = AtomicHashData::previousNode(i);
             return *this;
         }
         inline const_iterator operator--(int) {
             const_iterator r = *this;
-            i = AHashData::previousNode(i);
+            i = AtomicHashData::previousNode(i);
             return r;
         }
         inline const_iterator operator+(int j) const
@@ -402,7 +402,7 @@ public:
     const_iterator constFind(const Key &key) const;
     iterator insert(const Key &key, const T &value);
     iterator insertMulti(const Key &key, const T &value);
-	AHash &unite(const AHash &other);
+	AtomicHash &unite(const AtomicHash &other);
 
     // STL compatibility
     typedef T mapped_type;
@@ -436,14 +436,14 @@ public:
 
 private:
     void detach_helper();
-    void freeData(AHashData *d);
+    void freeData(AtomicHashData *d);
     Node **findNode(const Key &key, uint *hp = Q_NULLPTR) const;
     Node **findNode(const Key &key, uint h) const;
     Node *createNode(uint h, const Key &key, const T &value, Node **nextNode);
     void deleteNode(Node *node);
-    static void deleteNode2(AHashData::Node *node);
+    static void deleteNode2(AtomicHashData::Node *node);
 
-    static void duplicateNode(AHashData::Node *originalNode, void *newNode);
+    static void duplicateNode(AtomicHashData::Node *originalNode, void *newNode);
 
 	Node ** atomicFindNode(const Key &key, uint h) const;
 	Node * atomicCreateNode(const Key & key, uint h, const T & value, bool replace, bool * created);
@@ -454,7 +454,7 @@ private:
     bool isValidIterator(const iterator &it) const
     {
 #if defined(QT_DEBUG) && !defined(Q_HASH_NO_ITERATOR_DEBUG)
-        AHashData::Node *node = it.i;
+        AtomicHashData::Node *node = it.i;
         while (node->next)
             node = node->next;
         return (static_cast<void *>(node) == d);
@@ -468,24 +468,24 @@ private:
 
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE void AHash<Key, T>::deleteNode(Node *node)
+Q_INLINE_TEMPLATE void AtomicHash<Key, T>::deleteNode(Node *node)
 {
-    deleteNode2(reinterpret_cast<AHashData::Node*>(node));
+    deleteNode2(reinterpret_cast<AtomicHashData::Node*>(node));
     d->freeNode(node);
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE void AHash<Key, T>::deleteNode2(AHashData::Node *node)
+Q_INLINE_TEMPLATE void AtomicHash<Key, T>::deleteNode2(AtomicHashData::Node *node)
 {
 #ifdef Q_CC_BOR
-    concrete(node)->~AHashNode<Key, T>();
+    concrete(node)->~AtomicHashNode<Key, T>();
 #else
     concrete(node)->~Node();
 #endif
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE void AHash<Key, T>::duplicateNode(AHashData::Node *node, void *newNode)
+Q_INLINE_TEMPLATE void AtomicHash<Key, T>::duplicateNode(AtomicHashData::Node *node, void *newNode)
 {
     Node *concreteNode = concrete(node);
     new (newNode) Node(concreteNode->key, concreteNode->value, concreteNode->h, Q_NULLPTR);
@@ -493,8 +493,8 @@ Q_INLINE_TEMPLATE void AHash<Key, T>::duplicateNode(AHashData::Node *node, void 
 
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE typename AHash<Key, T>::Node *
-AHash<Key, T>::createNode(uint ah, const Key &akey, const T &avalue, Node **anextNode)
+Q_INLINE_TEMPLATE typename AtomicHash<Key, T>::Node *
+AtomicHash<Key, T>::createNode(uint ah, const Key &akey, const T &avalue, Node **anextNode)
 {
     Node *node = new (d->allocateNode(alignOfNode())) Node(akey, avalue, ah, *anextNode);
     *anextNode = node;
@@ -503,9 +503,9 @@ AHash<Key, T>::createNode(uint ah, const Key &akey, const T &avalue, Node **anex
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE AHash<Key, T> &AHash<Key, T>::unite(const AHash &other)
+Q_INLINE_TEMPLATE AtomicHash<Key, T> &AtomicHash<Key, T>::unite(const AtomicHash &other)
 {
-    AHash copy(other);
+    AtomicHash copy(other);
     const_iterator it = copy.constEnd();
     while (it != copy.constBegin()) {
         --it;
@@ -515,31 +515,31 @@ Q_INLINE_TEMPLATE AHash<Key, T> &AHash<Key, T>::unite(const AHash &other)
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE void AHash<Key, T>::freeData(AHashData *x)
+Q_OUTOFLINE_TEMPLATE void AtomicHash<Key, T>::freeData(AtomicHashData *x)
 {
     x->free_helper(deleteNode2);
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE void AHash<Key, T>::clear()
+Q_INLINE_TEMPLATE void AtomicHash<Key, T>::clear()
 {
-    *this = AHash();
+    *this = AtomicHash();
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE void AHash<Key, T>::detach_helper()
+Q_OUTOFLINE_TEMPLATE void AtomicHash<Key, T>::detach_helper()
 {
-    AHashData *x = d->detach_helper(duplicateNode, deleteNode2, sizeof(Node), alignOfNode());
+    AtomicHashData *x = d->detach_helper(duplicateNode, deleteNode2, sizeof(Node), alignOfNode());
     if (!d->ref.deref())
         freeData(d);
     d = x;
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE AHash<Key, T> &AHash<Key, T>::operator=(const AHash &other)
+Q_INLINE_TEMPLATE AtomicHash<Key, T> &AtomicHash<Key, T>::operator=(const AtomicHash &other)
 {
     if (d != other.d) {
-        AHashData *o = other.d;
+        AtomicHashData *o = other.d;
         o->ref.ref();
         if (!d->ref.deref())
             freeData(d);
@@ -551,7 +551,7 @@ Q_INLINE_TEMPLATE AHash<Key, T> &AHash<Key, T>::operator=(const AHash &other)
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE const T AHash<Key, T>::value(const Key &akey) const
+Q_INLINE_TEMPLATE const T AtomicHash<Key, T>::value(const Key &akey) const
 {
     Node *node;
     if (d->size == 0 || (node = *findNode(akey)) == e) {
@@ -562,7 +562,7 @@ Q_INLINE_TEMPLATE const T AHash<Key, T>::value(const Key &akey) const
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE const T AHash<Key, T>::value(const Key &akey, const T &adefaultValue) const
+Q_INLINE_TEMPLATE const T AtomicHash<Key, T>::value(const Key &akey, const T &adefaultValue) const
 {
     Node *node;
     if (d->size == 0 || (node = *findNode(akey)) == e) {
@@ -573,7 +573,7 @@ Q_INLINE_TEMPLATE const T AHash<Key, T>::value(const Key &akey, const T &adefaul
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QList<Key> AHash<Key, T>::uniqueKeys() const
+Q_OUTOFLINE_TEMPLATE QList<Key> AtomicHash<Key, T>::uniqueKeys() const
 {
     QList<Key> res;
     res.reserve(size()); // May be too much, but assume short lifetime
@@ -593,7 +593,7 @@ break_out_of_outer_loop:
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QList<Key> AHash<Key, T>::keys() const
+Q_OUTOFLINE_TEMPLATE QList<Key> AtomicHash<Key, T>::keys() const
 {
     QList<Key> res;
     res.reserve(size());
@@ -606,7 +606,7 @@ Q_OUTOFLINE_TEMPLATE QList<Key> AHash<Key, T>::keys() const
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QList<Key> AHash<Key, T>::keys(const T &avalue) const
+Q_OUTOFLINE_TEMPLATE QList<Key> AtomicHash<Key, T>::keys(const T &avalue) const
 {
     QList<Key> res;
     const_iterator i = begin();
@@ -619,13 +619,13 @@ Q_OUTOFLINE_TEMPLATE QList<Key> AHash<Key, T>::keys(const T &avalue) const
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE const Key AHash<Key, T>::key(const T &avalue) const
+Q_OUTOFLINE_TEMPLATE const Key AtomicHash<Key, T>::key(const T &avalue) const
 {
     return key(avalue, Key());
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE const Key AHash<Key, T>::key(const T &avalue, const Key &defaultValue) const
+Q_OUTOFLINE_TEMPLATE const Key AtomicHash<Key, T>::key(const T &avalue, const Key &defaultValue) const
 {
     const_iterator i = begin();
     while (i != end()) {
@@ -638,7 +638,7 @@ Q_OUTOFLINE_TEMPLATE const Key AHash<Key, T>::key(const T &avalue, const Key &de
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QList<T> AHash<Key, T>::values() const
+Q_OUTOFLINE_TEMPLATE QList<T> AtomicHash<Key, T>::values() const
 {
     QList<T> res;
     res.reserve(size());
@@ -651,7 +651,7 @@ Q_OUTOFLINE_TEMPLATE QList<T> AHash<Key, T>::values() const
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QList<T> AHash<Key, T>::values(const Key &akey) const
+Q_OUTOFLINE_TEMPLATE QList<T> AtomicHash<Key, T>::values(const Key &akey) const
 {
     QList<T> res;
     Node *node = *findNode(akey);
@@ -664,7 +664,7 @@ Q_OUTOFLINE_TEMPLATE QList<T> AHash<Key, T>::values(const Key &akey) const
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE int AHash<Key, T>::count(const Key &akey) const
+Q_OUTOFLINE_TEMPLATE int AtomicHash<Key, T>::count(const Key &akey) const
 {
     int cnt = 0;
     Node *node = *findNode(akey);
@@ -677,13 +677,13 @@ Q_OUTOFLINE_TEMPLATE int AHash<Key, T>::count(const Key &akey) const
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE const T AHash<Key, T>::operator[](const Key &akey) const
+Q_INLINE_TEMPLATE const T AtomicHash<Key, T>::operator[](const Key &akey) const
 {
     return value(akey);
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE T &AHash<Key, T>::operator[](const Key &akey)
+Q_INLINE_TEMPLATE T &AtomicHash<Key, T>::operator[](const Key &akey)
 {
     detach();
 
@@ -698,7 +698,7 @@ Q_INLINE_TEMPLATE T &AHash<Key, T>::operator[](const Key &akey)
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE typename AHash<Key, T>::iterator AHash<Key, T>::insert(const Key &akey,
+Q_INLINE_TEMPLATE typename AtomicHash<Key, T>::iterator AtomicHash<Key, T>::insert(const Key &akey,
                                                                          const T &avalue)
 {
     detach();
@@ -711,13 +711,13 @@ Q_INLINE_TEMPLATE typename AHash<Key, T>::iterator AHash<Key, T>::insert(const K
         return iterator(createNode(h, akey, avalue, node));
     }
 
-    if (!QtPrivate::is_same<T, AHashDummyValue>::value)
+    if (!QtPrivate::is_same<T, AtomicHashDummyValue>::value)
         (*node)->value = avalue;
     return iterator(*node);
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE typename AHash<Key, T>::iterator AHash<Key, T>::insertMulti(const Key &akey,
+Q_INLINE_TEMPLATE typename AtomicHash<Key, T>::iterator AtomicHash<Key, T>::insertMulti(const Key &akey,
                                                                               const T &avalue)
 {
     detach();
@@ -729,7 +729,7 @@ Q_INLINE_TEMPLATE typename AHash<Key, T>::iterator AHash<Key, T>::insertMulti(co
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE int AHash<Key, T>::remove(const Key &akey)
+Q_OUTOFLINE_TEMPLATE int AtomicHash<Key, T>::remove(const Key &akey)
 {
     if (isEmpty()) // prevents detaching shared null
         return 0;
@@ -752,7 +752,7 @@ Q_OUTOFLINE_TEMPLATE int AHash<Key, T>::remove(const Key &akey)
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE T AHash<Key, T>::take(const Key &akey)
+Q_OUTOFLINE_TEMPLATE T AtomicHash<Key, T>::take(const Key &akey)
 {
     if (isEmpty()) // prevents detaching shared null
         return T();
@@ -772,9 +772,9 @@ Q_OUTOFLINE_TEMPLATE T AHash<Key, T>::take(const Key &akey)
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE typename AHash<Key, T>::iterator AHash<Key, T>::erase(iterator it)
+Q_OUTOFLINE_TEMPLATE typename AtomicHash<Key, T>::iterator AtomicHash<Key, T>::erase(iterator it)
 {
-    Q_ASSERT_X(isValidIterator(it), "AHash::erase", "The specified iterator argument 'it' is invalid");
+    Q_ASSERT_X(isValidIterator(it), "AtomicHash::erase", "The specified iterator argument 'it' is invalid");
 
     if (it == iterator(e))
         return it;
@@ -809,39 +809,39 @@ Q_OUTOFLINE_TEMPLATE typename AHash<Key, T>::iterator AHash<Key, T>::erase(itera
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE void AHash<Key, T>::reserve(int asize)
+Q_INLINE_TEMPLATE void AtomicHash<Key, T>::reserve(int asize)
 {
     detach();
     d->rehash(-qMax(asize, 1));
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE typename AHash<Key, T>::const_iterator AHash<Key, T>::find(const Key &akey) const
+Q_INLINE_TEMPLATE typename AtomicHash<Key, T>::const_iterator AtomicHash<Key, T>::find(const Key &akey) const
 {
     return const_iterator(*findNode(akey));
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE typename AHash<Key, T>::const_iterator AHash<Key, T>::constFind(const Key &akey) const
+Q_INLINE_TEMPLATE typename AtomicHash<Key, T>::const_iterator AtomicHash<Key, T>::constFind(const Key &akey) const
 {
     return const_iterator(*findNode(akey));
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE typename AHash<Key, T>::iterator AHash<Key, T>::find(const Key &akey)
+Q_INLINE_TEMPLATE typename AtomicHash<Key, T>::iterator AtomicHash<Key, T>::find(const Key &akey)
 {
     detach();
     return iterator(*findNode(akey));
 }
 
 template <class Key, class T>
-Q_INLINE_TEMPLATE bool AHash<Key, T>::contains(const Key &akey) const
+Q_INLINE_TEMPLATE bool AtomicHash<Key, T>::contains(const Key &akey) const
 {
     return *findNode(akey) != e;
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE typename AHash<Key, T>::Node **AHash<Key, T>::findNode(const Key &akey, uint h) const
+Q_OUTOFLINE_TEMPLATE typename AtomicHash<Key, T>::Node **AtomicHash<Key, T>::findNode(const Key &akey, uint h) const
 {
     Node **node;
 
@@ -857,7 +857,7 @@ Q_OUTOFLINE_TEMPLATE typename AHash<Key, T>::Node **AHash<Key, T>::findNode(cons
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE typename AHash<Key, T>::Node **AHash<Key, T>::findNode(const Key &akey,
+Q_OUTOFLINE_TEMPLATE typename AtomicHash<Key, T>::Node **AtomicHash<Key, T>::findNode(const Key &akey,
                                                                             uint *ahp) const
 {
     uint h = 0;
@@ -873,7 +873,7 @@ Q_OUTOFLINE_TEMPLATE typename AHash<Key, T>::Node **AHash<Key, T>::findNode(cons
 
 
 template <class Key, class T>
-typename AHash<Key, T>::Node ** AHash<Key, T>::atomicFindNode(const Key &key, uint h) const
+typename AtomicHash<Key, T>::Node ** AtomicHash<Key, T>::atomicFindNode(const Key &key, uint h) const
 {
 	Node ** node;
 	d->globalLock->lockForRead();
@@ -891,7 +891,7 @@ typename AHash<Key, T>::Node ** AHash<Key, T>::atomicFindNode(const Key &key, ui
 	return node;
 }
 template <class Key, class T>
-typename AHash<Key, T>::Node * AHash<Key, T>::atomicCreateNode(const Key & key, uint h, const T & value, bool replace, bool * created)
+typename AtomicHash<Key, T>::Node * AtomicHash<Key, T>::atomicCreateNode(const Key & key, uint h, const T & value, bool replace, bool * created)
 {
 	bool dummy;
 	if (!created)
@@ -940,7 +940,7 @@ typename AHash<Key, T>::Node * AHash<Key, T>::atomicCreateNode(const Key & key, 
 
 
 template <class Key, class T>
-int AHash<Key, T>::atomicDeleteNode(const Key & key, uint h)
+int AtomicHash<Key, T>::atomicDeleteNode(const Key & key, uint h)
 {
 	int removed = 0;
 
@@ -981,8 +981,8 @@ int AHash<Key, T>::atomicDeleteNode(const Key & key, uint h)
 
 
 template <class Key, class T>
-typename AHash<Key, T>::Node *
-AHash<Key, T>::createNodeNotResize(uint ah, const Key &akey, const T &avalue, Node **anextNode)
+typename AtomicHash<Key, T>::Node *
+AtomicHash<Key, T>::createNodeNotResize(uint ah, const Key &akey, const T &avalue, Node **anextNode)
 {
 	Node *node = new (d->allocateNode(alignOfNode())) Node(akey, avalue, ah, *anextNode);
 	*anextNode = node;
@@ -990,7 +990,7 @@ AHash<Key, T>::createNodeNotResize(uint ah, const Key &akey, const T &avalue, No
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE bool AHash<Key, T>::operator==(const AHash &other) const
+Q_OUTOFLINE_TEMPLATE bool AtomicHash<Key, T>::operator==(const AtomicHash &other) const
 {
     if (size() != other.size())
         return false;
