@@ -1,8 +1,7 @@
 TEMPLATE = app
 TARGET = FreeCellCalculator
 
-QT += core gui opengl
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += core gui opengl widgets
 
 LIBS += \
     -lopengl32 \
